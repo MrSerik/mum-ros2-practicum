@@ -1,0 +1,30 @@
+# Режим effort_jtc: JointTrajectoryController с выходом по моменту.
+# Внутри контроллера работает ПИД-регулятор (gains), коэффициенты — предмет настройки в ПР №7.
+controller_manager:
+  ros__parameters:
+    update_rate: 500  # Гц
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+arm_controller:
+  ros__parameters:
+    joints:
+      - joint1
+      - joint2
+      - joint3
+    command_interfaces:
+      - effort
+    state_interfaces:
+      - position
+      - velocity
+    state_publish_rate: 50.0
+    action_monitor_rate: 20.0
+    allow_partial_joints_goal: false
+    gains:
+      joint1: {p: 1.0, i: 0.0, d: 0.03, i_clamp: 0.5}
+      joint2: {p: 6.0, i: 0.0, d: 0.25, i_clamp: 0.5}
+      joint3: {p: 3.0, i: 0.0, d: 0.06, i_clamp: 0.5}

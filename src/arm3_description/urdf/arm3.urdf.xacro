@@ -1,0 +1,255 @@
+<?xml version="1.0"?>
+<!--
+  arm3 — учебный 3-звенный манипулятор (3 сервопривода): поворот основания + плечо + локоть.
+  Кинематика соответствует таблице Денавита–Хартенберга (стандартная форма):
+      i | theta_i | d_i | a_i | alpha_i
+      1 |   q1    | D1  |  0  |  +pi/2
+      2 |   q2    |  0  | A2  |   0
+      3 |   q3    |  0  | A3  |   0
+  Система координат 0 = base_link, система 3 = tool0.
+  Аргументы:
+      sim_mode     : gazebo | mock        (Gazebo Harmonic или "фиктивное" железо для MoveIt)
+      control_mode : position | effort | effort_jtc
+-->
+<robot name="arm3" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:arg name="sim_mode" default="gazebo"/>
+  <xacro:arg name="control_mode" default="position"/>
+  <xacro:property name="sim_mode" value="$(arg sim_mode)"/>
+  <xacro:property name="control_mode" value="$(arg control_mode)"/>
+
+  <!-- ===== Геометрические параметры (м) — те же, что в mum_labs/arm3_kinematics.py ===== -->
+  <xacro:property name="PI" value="3.141592653589793"/>
+  <xacro:property name="H_PED" value="0.20"/>   <!-- высота подставки -->
+  <xacro:property name="H_BASE" value="0.05"/>  <!-- высота корпуса основания (до оси q1) -->
+  <xacro:property name="H_COL" value="0.05"/>   <!-- высота поворотной колонны (до оси q2) -->
+  <xacro:property name="A2" value="0.12"/>      <!-- длина плеча -->
+  <xacro:property name="A3" value="0.12"/>      <!-- длина предплечья -->
+  <!-- D1 = H_BASE + H_COL = 0.10 м -->
+
+  <!-- ===== Массы (кг) ===== -->
+  <xacro:property name="M_BASE" value="0.50"/>
+  <xacro:property name="M_L1" value="0.10"/>
+  <xacro:property name="M_L2" value="0.12"/>
+  <xacro:property name="M_L3" value="0.08"/>
+
+  <!-- ===== Ограничения сервоприводов ===== -->
+  <xacro:property name="EFFORT" value="1.5"/>   <!-- Н·м -->
+  <xacro:property name="VEL" value="3.0"/>      <!-- рад/с -->
+  <xacro:property name="DAMP" value="0.05"/>    <!-- вязкое трение в редукторе сервопривода, Н·м·с/рад -->
+
+  <!-- ===== Материалы ===== -->
+  <material name="grey"><color rgba="0.35 0.35 0.38 1"/></material>
+  <material name="dark"><color rgba="0.12 0.12 0.14 1"/></material>
+  <material name="orange"><color rgba="0.95 0.45 0.10 1"/></material>
+  <material name="blue"><color rgba="0.15 0.35 0.80 1"/></material>
+  <material name="red"><color rgba="0.85 0.10 0.10 1"/></material>
+
+  <!-- ===== Макросы инерции ===== -->
+  <xacro:macro name="box_inertia" params="m x y z ox oy oz">
+    <inertial>
+      <origin xyz="${ox} ${oy} ${oz}" rpy="0 0 0"/>
+      <mass value="${m}"/>
+      <inertia ixx="${m*(y*y+z*z)/12}" ixy="0" ixz="0"
+               iyy="${m*(x*x+z*z)/12}" iyz="0"
+               izz="${m*(x*x+y*y)/12}"/>
+    </inertial>
+  </xacro:macro>
+  <xacro:macro name="cyl_inertia" params="m r h oz">
+    <inertial>
+      <origin xyz="0 0 ${oz}" rpy="0 0 0"/>
+      <mass value="${m}"/>
+      <inertia ixx="${m*(3*r*r+h*h)/12}" ixy="0" ixz="0"
+               iyy="${m*(3*r*r+h*h)/12}" iyz="0"
+               izz="${m*r*r/2}"/>
+    </inertial>
+  </xacro:macro>
+
+  <!-- ===== Звенья ===== -->
+  <link name="world"/>
+
+  <joint name="world_to_pedestal" type="fixed">
+    <parent link="world"/>
+    <child link="pedestal"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="pedestal">
+    <visual>
+      <origin xyz="0 0 ${H_PED/2}"/>
+      <geometry><box size="0.16 0.16 ${H_PED}"/></geometry>
+      <material name="grey"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${H_PED/2}"/>
+      <geometry><box size="0.16 0.16 ${H_PED}"/></geometry>
+    </collision>
+    <xacro:box_inertia m="2.0" x="0.16" y="0.16" z="${H_PED}" ox="0" oy="0" oz="${H_PED/2}"/>
+  </link>
+
+  <joint name="pedestal_to_base" type="fixed">
+    <parent link="pedestal"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 ${H_PED}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- base_link = система координат 0 (ось z0 — ось первого сервопривода) -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 ${H_BASE/2}"/>
+      <geometry><cylinder radius="0.06" length="${H_BASE}"/></geometry>
+      <material name="dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${H_BASE/2}"/>
+      <geometry><cylinder radius="0.06" length="${H_BASE}"/></geometry>
+    </collision>
+    <xacro:cyl_inertia m="${M_BASE}" r="0.06" h="${H_BASE}" oz="${H_BASE/2}"/>
+  </link>
+
+  <!-- Сервопривод 1: поворот вокруг z0 -->
+  <joint name="joint1" type="revolute">
+    <parent link="base_link"/>
+    <child link="link1"/>
+    <origin xyz="0 0 ${H_BASE}" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="${-PI/2}" upper="${PI/2}" effort="${EFFORT}" velocity="${VEL}"/>
+    <dynamics damping="${DAMP}" friction="0.0"/>
+  </joint>
+
+  <link name="link1">
+    <visual>
+      <origin xyz="0 0 ${H_COL/2}"/>
+      <geometry><cylinder radius="0.035" length="${H_COL}"/></geometry>
+      <material name="orange"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${H_COL/2}"/>
+      <geometry><cylinder radius="0.035" length="${H_COL}"/></geometry>
+    </collision>
+    <xacro:cyl_inertia m="${M_L1}" r="0.035" h="${H_COL}" oz="${H_COL/2}"/>
+  </link>
+
+  <!-- Сервопривод 2: плечо. Ось (0,-1,0): положительный угол поднимает звено вверх
+       (так ось совпадает с осью z1 таблицы ДХ при alpha1 = +pi/2). -->
+  <joint name="joint2" type="revolute">
+    <parent link="link1"/>
+    <child link="link2"/>
+    <origin xyz="0 0 ${H_COL}" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-0.3" upper="2.8" effort="${EFFORT}" velocity="${VEL}"/>
+    <dynamics damping="${DAMP}" friction="0.0"/>
+  </joint>
+
+  <link name="link2">
+    <visual>
+      <origin xyz="${A2/2} 0 0"/>
+      <geometry><box size="${A2} 0.03 0.03"/></geometry>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <origin xyz="${A2/2} 0 0"/>
+      <geometry><box size="${A2} 0.03 0.03"/></geometry>
+    </collision>
+    <xacro:box_inertia m="${M_L2}" x="${A2}" y="0.03" z="0.03" ox="${A2/2}" oy="0" oz="0"/>
+  </link>
+
+  <!-- Сервопривод 3: локоть -->
+  <joint name="joint3" type="revolute">
+    <parent link="link2"/>
+    <child link="link3"/>
+    <origin xyz="${A2} 0 0" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-2.5" upper="2.5" effort="${EFFORT}" velocity="${VEL}"/>
+    <dynamics damping="${DAMP}" friction="0.0"/>
+  </joint>
+
+  <link name="link3">
+    <visual>
+      <origin xyz="${A3/2} 0 0"/>
+      <geometry><box size="${A3} 0.025 0.025"/></geometry>
+      <material name="orange"/>
+    </visual>
+    <collision>
+      <origin xyz="${A3/2} 0 0"/>
+      <geometry><box size="${A3} 0.025 0.025"/></geometry>
+    </collision>
+    <xacro:box_inertia m="${M_L3}" x="${A3}" y="0.025" z="0.025" ox="${A3/2}" oy="0" oz="0"/>
+  </link>
+
+  <!-- Рабочая точка (схват) -->
+  <joint name="tool_joint" type="fixed">
+    <parent link="link3"/>
+    <child link="tool0"/>
+    <origin xyz="${A3} 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="tool0">
+    <visual>
+      <geometry><sphere radius="0.012"/></geometry>
+      <material name="red"/>
+    </visual>
+    <inertial>
+      <mass value="0.005"/>
+      <inertia ixx="1e-7" ixy="0" ixz="0" iyy="1e-7" iyz="0" izz="1e-7"/>
+    </inertial>
+  </link>
+
+  <!-- ===== ros2_control ===== -->
+  <xacro:macro name="arm_joint_if" params="name init">
+    <joint name="${name}">
+      <xacro:if value="${control_mode == 'position'}">
+        <command_interface name="position"/>
+      </xacro:if>
+      <xacro:unless value="${control_mode == 'position'}">
+        <command_interface name="effort">
+          <param name="min">${-EFFORT}</param>
+          <param name="max">${EFFORT}</param>
+        </command_interface>
+      </xacro:unless>
+      <state_interface name="position">
+        <param name="initial_value">${init}</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+  </xacro:macro>
+
+  <ros2_control name="arm3_system" type="system">
+    <hardware>
+      <xacro:if value="${sim_mode == 'gazebo'}">
+        <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+      </xacro:if>
+      <xacro:if value="${sim_mode == 'mock'}">
+        <plugin>mock_components/GenericSystem</plugin>
+      </xacro:if>
+    </hardware>
+    <xacro:arm_joint_if name="joint1" init="0.0"/>
+    <xacro:arm_joint_if name="joint2" init="0.0"/>
+    <xacro:arm_joint_if name="joint3" init="0.0"/>
+  </ros2_control>
+
+  <xacro:if value="${sim_mode == 'gazebo'}">
+    <gazebo>
+      <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+        <xacro:if value="${control_mode == 'position'}">
+          <parameters>$(find arm3_description)/config/arm3_controllers.yaml</parameters>
+        </xacro:if>
+        <xacro:if value="${control_mode == 'effort'}">
+          <parameters>$(find arm3_description)/config/arm3_effort_controllers.yaml</parameters>
+        </xacro:if>
+        <xacro:if value="${control_mode == 'effort_jtc'}">
+          <parameters>$(find arm3_description)/config/arm3_effort_jtc_controllers.yaml</parameters>
+        </xacro:if>
+      </plugin>
+    </gazebo>
+
+    <gazebo reference="pedestal"><visual><material><diffuse>0.35 0.35 0.38 1</diffuse><ambient>0.35 0.35 0.38 1</ambient></material></visual></gazebo>
+    <gazebo reference="base_link"><visual><material><diffuse>0.12 0.12 0.14 1</diffuse><ambient>0.12 0.12 0.14 1</ambient></material></visual></gazebo>
+    <gazebo reference="link1"><visual><material><diffuse>0.95 0.45 0.10 1</diffuse><ambient>0.95 0.45 0.10 1</ambient></material></visual></gazebo>
+    <gazebo reference="link2"><visual><material><diffuse>0.15 0.35 0.80 1</diffuse><ambient>0.15 0.35 0.80 1</ambient></material></visual></gazebo>
+    <gazebo reference="link3"><visual><material><diffuse>0.95 0.45 0.10 1</diffuse><ambient>0.95 0.45 0.10 1</ambient></material></visual></gazebo>
+    <gazebo reference="tool0"><visual><material><diffuse>0.85 0.10 0.10 1</diffuse><ambient>0.85 0.10 0.10 1</ambient></material></visual></gazebo>
+  </xacro:if>
+
+</robot>

@@ -1,0 +1,18 @@
+# Режим effort: прямое задание моментов. Регулятор пишет студент (mum_labs/pid_node).
+# Топик команд: /effort_controller/commands  (std_msgs/msg/Float64MultiArray, [u1, u2, u3] в Н·м)
+controller_manager:
+  ros__parameters:
+    update_rate: 200  # Гц (частота /joint_states и цикла регулятора на Python)
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    effort_controller:
+      type: effort_controllers/JointGroupEffortController
+
+effort_controller:
+  ros__parameters:
+    joints:
+      - joint1
+      - joint2
+      - joint3
