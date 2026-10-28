@@ -1,0 +1,232 @@
+Panels:
+- Class: rviz_common/Displays
+  Name: Displays
+  Help Height: 78
+  Property Tree Widget:
+    Expanded: null
+    Splitter Ratio: 0.5
+  Tree Height: 600
+- Class: rviz_common/Tool Properties
+  Name: Tool Properties
+  Splitter Ratio: 0.58
+- Class: rviz_common/Views
+  Name: Views
+  Splitter Ratio: 0.5
+Visualization Manager:
+  Class: ''
+  Name: root
+  Enabled: true
+  Displays:
+  - Class: rviz_default_plugins/Grid
+    Name: Grid
+    Enabled: true
+    Value: true
+    Cell Size: 1.0
+    Plane Cell Count: 20
+    Color: 160; 160; 164
+    Alpha: 0.5
+    Reference Frame: <Fixed Frame>
+    Plane: XY
+    Normal Cell Count: 0
+    Offset:
+      X: 0
+      Y: 0
+      Z: 0
+    Line Style:
+      Line Width: 0.03
+      Value: Lines
+  - Class: rviz_default_plugins/RobotModel
+    Name: RobotModel
+    Enabled: true
+    Value: true
+    Alpha: 1
+    Description Source: Topic
+    Description File: ''
+    Description Topic:
+      Depth: 5
+      Durability Policy: Transient Local
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Value: /robot_description
+    Visual Enabled: true
+    Collision Enabled: false
+    TF Prefix: ''
+    Update Interval: 0
+  - Class: rviz_default_plugins/TF
+    Name: TF
+    Enabled: true
+    Value: true
+    Marker Scale: 0.3
+    Show Arrows: true
+    Show Axes: true
+    Show Names: true
+    Frame Timeout: 15
+    Update Interval: 0
+  - Class: rviz_default_plugins/LaserScan
+    Name: LaserScan
+    Enabled: true
+    Value: true
+    Topic:
+      Depth: 5
+      Durability Policy: Volatile
+      History Policy: Keep Last
+      Reliability Policy: Best Effort
+      Value: /scan
+    Size (m): 0.03
+    Style: Flat Squares
+    Color Transformer: Intensity
+    Decay Time: 0
+    Position Transformer: XYZ
+    Use rainbow: true
+  - Class: rviz_default_plugins/Odometry
+    Name: Odometry
+    Enabled: true
+    Value: true
+    Keep: 50
+    Position Tolerance: 0.05
+    Angle Tolerance: 0.1
+    Topic:
+      Depth: 5
+      Durability Policy: Volatile
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Value: /odom
+    Shape:
+      Value: Arrow
+      Color: 255; 25; 0
+      Alpha: 1
+      Shaft Length: 0.2
+      Shaft Radius: 0.02
+      Head Length: 0.06
+      Head Radius: 0.04
+  - Class: rviz_default_plugins/Path
+    Name: Path /my_odom_path
+    Enabled: true
+    Value: true
+    Topic:
+      Depth: 5
+      Durability Policy: Volatile
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Value: /my_odom_path
+    Color: 25; 255; 0
+    Line Style: Lines
+    Alpha: 1
+    Buffer Length: 1
+  - Class: rviz_default_plugins/Path
+    Name: Path /gt_path
+    Enabled: true
+    Value: true
+    Topic:
+      Depth: 5
+      Durability Policy: Volatile
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Value: /gt_path
+    Color: 255; 25; 0
+    Line Style: Lines
+    Alpha: 1
+    Buffer Length: 1
+  - Class: rviz_default_plugins/MarkerArray
+    Name: LabMarkers
+    Enabled: true
+    Value: true
+    Namespaces: {}
+    Topic:
+      Depth: 5
+      Durability Policy: Volatile
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Value: /lab_markers
+  - Class: rviz_default_plugins/Image
+    Name: Image /camera/image
+    Enabled: true
+    Value: true
+    Topic:
+      Depth: 5
+      Durability Policy: Volatile
+      History Policy: Keep Last
+      Reliability Policy: Best Effort
+      Value: /camera/image
+    Normalize Range: true
+  - Class: rviz_default_plugins/Image
+    Name: Image /camera/mask
+    Enabled: true
+    Value: true
+    Topic:
+      Depth: 5
+      Durability Policy: Volatile
+      History Policy: Keep Last
+      Reliability Policy: Best Effort
+      Value: /camera/mask
+    Normalize Range: true
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: odom
+    Frame Rate: 30
+  Tools:
+  - Class: rviz_default_plugins/Interact
+    Hide Inactive Objects: true
+  - Class: rviz_default_plugins/MoveCamera
+  - Class: rviz_default_plugins/Select
+  - Class: rviz_default_plugins/FocusCamera
+  - Class: rviz_default_plugins/Measure
+    Line color: 128; 128; 0
+  - Class: rviz_default_plugins/SetInitialPose
+    Topic:
+      Depth: 5
+      Durability Policy: Volatile
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Value: /initialpose
+    Covariance x: 0.25
+    Covariance y: 0.25
+    Covariance yaw: 0.0685
+  - Class: rviz_default_plugins/SetGoal
+    Topic:
+      Depth: 5
+      Durability Policy: Volatile
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Value: /goal_pose
+  - Class: rviz_default_plugins/PublishPoint
+    Single click: true
+    Topic:
+      Depth: 5
+      Durability Policy: Volatile
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Value: /clicked_point
+  Transformation:
+    Current:
+      Class: rviz_default_plugins/TF
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Name: Current View
+      Distance: 5.0
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0.0
+      Pitch: 0.5
+      Yaw: 0.8
+      Target Frame: <Fixed Frame>
+      Near Clip Distance: 0.01
+      Value: Orbit (rviz)
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05
+      Invert Z Axis: false
+    Saved: null
+Window Geometry:
+  Height: 900
+  Width: 1400
+  Hide Left Dock: false
+  Hide Right Dock: true
+  Displays:
+    collapsed: false
+  Views:
+    collapsed: true
+  Tool Properties:
+    collapsed: true
